@@ -409,13 +409,13 @@ export async function renderVisaPdfBuffer(
   ]);
 
   // Header Logos
-  const leftLogoH = 82;
+  const leftLogoH = 68;
   const leftLogoW = (ksaVisaLogo.width / ksaVisaLogo.height) * leftLogoH;
   ctx.drawImage(ksaVisaLogo, padX, 24, leftLogoW, leftLogoH);
 
-  const rightLogoH = 78;
+  const rightLogoH = 44;
   const rightLogoW = (ksaHeaderTitle.width / ksaHeaderTitle.height) * rightLogoH;
-  ctx.drawImage(ksaHeaderTitle, W - padX - rightLogoW, 26, rightLogoW, rightLogoH);
+  ctx.drawImage(ksaHeaderTitle, W - padX - rightLogoW, 34, rightLogoW, rightLogoH);
 
   // Applicant Photo
   const photoX = padX;
@@ -464,7 +464,7 @@ export async function renderVisaPdfBuffer(
   }
 
   // Top Chevron Divider (under summary table)
-  drawTiledChevronPng(ctx, chevronStripImg, sumX, curY + 6, sumW, 22);
+  drawTiledChevronPng(ctx, chevronStripImg, sumX, curY + 8, sumW, 17);
 
   // Main 10-row Details Table
   const detailRows = [
@@ -542,12 +542,14 @@ export async function renderVisaPdfBuffer(
   ctx.fillText(data.barcode2No, W / 2, curY + 104);
 
   // Fingerprint icon
-  const fpY = curY + 108;
-  ctx.drawImage(fingerprintImg, padX + 68, fpY, 44, 44);
+  const fpY = curY + 106;
+  const fpH = 50;
+  const fpW = (fingerprintImg.width / fingerprintImg.height) * fpH;
+  ctx.drawImage(fingerprintImg, padX + 68, fpY, fpW, fpH);
 
   // Full-width bottom Chevron Divider
-  const chev2Y = fpY + 50;
-  drawTiledChevronPng(ctx, chevronStripImg, padX, chev2Y, contentW, 22);
+  const chev2Y = fpY + fpH + 6;
+  drawTiledChevronPng(ctx, chevronStripImg, padX, chev2Y, contentW, 17);
 
   // QR Code Section
   const qrSize = 72;
