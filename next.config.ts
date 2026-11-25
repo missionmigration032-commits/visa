@@ -3,12 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   serverExternalPackages: [
     "playwright-core",
-    "playwright",
     "@sparticuz/chromium",
     "bwip-js",
   ],
   outputFileTracingIncludes: {
-    "/**": [
+    "/": [
       "./node_modules/@sparticuz/chromium/**/*",
       "./public/assets/**/*",
     ],

@@ -26,7 +26,7 @@ async function loadPublicAssetDataUrl(
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
 
-async function launchBrowser(): Promise<Browser> {
+export async function launchRenderBrowser(): Promise<Browser> {
   const isServerless = Boolean(
     process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
   );
@@ -40,44 +40,79 @@ async function launchBrowser(): Promise<Browser> {
     });
   }
 
-  try {
-    const { chromium } = await import("playwright");
-    return await chromium.launch({ headless: true });
-  } catch {
-    const executablePath = await sparticuzChromium.executablePath();
-    return playwrightChromium.launch({
-      args: sparticuzChromium.args,
-      executablePath,
-      headless: true,
-    });
+  // Local Linux/macOS: prefer system/playwright-installed Chromium if present, else @sparticuz/chromium
+  const home = process.env.HOME || "";
+  const localCandidates = [
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    ...(home
+      ? [
+          `${home}/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell`,
+        ]
+      : []),
+  ];
+
+  for (const candidate of localCandidates) {
+    try {
+      await fs.access(candidate);
+      return await playwrightChromium.launch({
+        executablePath: candidate,
+        headless: true,
+      });
+    } catch {
+      // try next candidate
+    }
   }
+
+  const executablePath = await sparticuzChromium.executablePath();
+  return playwrightChromium.launch({
+    args: sparticuzChromium.args,
+    executablePath,
+    headless: true,
+  });
+}
+
+async function waitForPageReady(page: import("playwright-core").Page) {
+  await page.evaluate(() =>
+    Promise.race([
+      document.fonts.ready,
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ])
+  );
 }
 
 export async function renderVerificationCardPng(
   data: VisaFormData,
-  mrz: [string, string]
+  mrz: [string, string],
+  existingBrowser?: Browser
 ): Promise<Buffer> {
   const mofaLogoDataUrl = await loadPublicAssetDataUrl("mofa-logo.png", "image/png");
   const html = renderVerificationCardHtml(data, mrz, mofaLogoDataUrl);
-  const browser = await launchBrowser();
+  const browser = existingBrowser ?? (await launchRenderBrowser());
 
   try {
     const page = await browser.newPage({
       viewport: { width: 637, height: 729 },
       deviceScaleFactor: 2,
     });
-    await page.setContent(html, { waitUntil: "networkidle" });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await waitForPageReady(page);
     const screenshot = await page.screenshot({ type: "png" });
+    await page.close();
     return Buffer.from(screenshot);
   } finally {
-    await browser.close();
+    if (!existingBrowser) {
+      await browser.close();
+    }
   }
 }
 
 export async function renderVisaPdfBuffer(
   data: VisaFormData,
   mrz: [string, string],
-  qrTargetUrl: string
+  qrTargetUrl: string,
+  existingBrowser?: Browser
 ): Promise<{ pdfBuffer: Buffer; qrDataUrl: string }> {
   const barcode1Svg = generateCode128Svg(data.visaNo);
   const barcode2Svg = generateCode128Svg(data.barcode2No);
@@ -114,19 +149,23 @@ export async function renderVisaPdfBuffer(
     fingerprintDataUrl,
   });
 
-  const browser = await launchBrowser();
+  const browser = existingBrowser ?? (await launchRenderBrowser());
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await waitForPageReady(page);
     const pdf = await page.pdf({
       format: "A4",
       pageRanges: "1",
       printBackground: true,
       margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
     });
+    await page.close();
     return { pdfBuffer: Buffer.from(pdf), qrDataUrl };
   } finally {
-    await browser.close();
+    if (!existingBrowser) {
+      await browser.close();
+    }
   }
 }

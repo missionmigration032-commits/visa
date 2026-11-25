@@ -70,12 +70,28 @@ export default function VisaBuilder({ cloudinaryReady }: VisaBuilderProps) {
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setPhotoPreview(reader.result);
-      }
+      if (typeof reader.result !== "string") return;
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 500;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.85);
+          setPhotoPreview(compressed);
+          setPhotoFile(null);
+        } else {
+          setPhotoPreview(reader.result as string);
+          setPhotoFile(file);
+        }
+      };
+      img.src = reader.result;
     };
     reader.readAsDataURL(file);
   }
