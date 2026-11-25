@@ -9,13 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^153.0.0",
+    "@napi-rs/canvas": "^1.2.1",
     "bwip-js": "^4.11.4",
     "cloudinary": "^2.11.0",
     "lucide-react": "^1.80.0",
     "next": "16.4.6",
-    "playwright": "^1.65.1",
-    "playwright-core": "^1.65.1",
+    "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",

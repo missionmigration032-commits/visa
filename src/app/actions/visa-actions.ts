@@ -4,7 +4,6 @@ import { visaFormSchema, type VisaFormData } from "@/lib/visa-schema";
 import { generateMrzLines } from "@/lib/mrz";
 import { isCloudinaryConfigured, uploadBufferToCloudinary } from "@/lib/cloudinary";
 import {
-  launchRenderBrowser,
   renderVerificationCardPng,
   renderVisaPdfBuffer,
 } from "@/lib/render-documents";
@@ -90,50 +89,47 @@ export async function generateAndStoreVisaAction(
     const timestamp = Date.now();
     const safeVisaNo = data.visaNo.replace(/[^a-zA-Z0-9_-]/g, "");
 
-    const browser = await launchRenderBrowser();
-    try {
-      // 1. Render Verification Card Image (the document shown when QR is scanned)
-      const cardPngBuffer = await renderVerificationCardPng(data, mrz, browser);
+    // 1. Render Verification Card Image (the document shown when QR is scanned)
+    const cardPngBuffer = await renderVerificationCardPng(data, mrz);
 
-      // 2. Upload Verification Card Image to Cloudinary
-      const cardUpload = await uploadBufferToCloudinary(cardPngBuffer, {
-        folder: "ksa-visas/verification-cards",
-        publicId: `card-${safeVisaNo}-${timestamp}`,
-        resourceType: "image",
-        format: "png",
-      });
+    // 2. Upload Verification Card Image to Cloudinary
+    const cardUpload = await uploadBufferToCloudinary(cardPngBuffer, {
+      folder: "ksa-visas/verification-cards",
+      publicId: `card-${safeVisaNo}-${timestamp}`,
+      resourceType: "image",
+      format: "png",
+    });
 
-      // 3. Render Main Visa PDF with QR code pointing to the Cloudinary Verification Card URL
-      const { pdfBuffer, qrDataUrl } = await renderVisaPdfBuffer(
-        data,
-        mrz,
-        cardUpload.secureUrl,
-        browser
-      );
+    // 3. Render Main Visa PDF with QR code pointing to the Cloudinary Verification Card URL
+    const { pdfBuffer, qrDataUrl } = await renderVisaPdfBuffer(
+      data,
+      mrz,
+      cardUpload.secureUrl
+    );
 
-      // 4. Upload Main Visa PDF to Cloudinary
-      const pdfUpload = await uploadBufferToCloudinary(pdfBuffer, {
-        folder: "ksa-visas/pdfs",
-        publicId: `visa-${safeVisaNo}-${timestamp}.pdf`,
-        resourceType: "raw",
-      });
+    // 4. Upload Main Visa PDF to Cloudinary
+    const pdfUpload = await uploadBufferToCloudinary(pdfBuffer, {
+      folder: "ksa-visas/pdfs",
+      publicId: `visa-${safeVisaNo}-${timestamp}.pdf`,
+      resourceType: "raw",
+    });
 
-      return {
-        success: true,
-        pdfUrl: pdfUpload.secureUrl,
-        verificationImageUrl: cardUpload.secureUrl,
-        qrDataUrl,
-        mrz,
-        visaNo: data.visaNo,
-      };
-    } finally {
-      await browser.close();
-    }
+    return {
+      success: true,
+      pdfUrl: pdfUpload.secureUrl,
+      verificationImageUrl: cardUpload.secureUrl,
+      qrDataUrl,
+      mrz,
+      visaNo: data.visaNo,
+    };
   } catch (err) {
     console.error("Visa generation failed:", err);
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to generate and store visa.",
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to generate and store visa.",
     };
   }
 }

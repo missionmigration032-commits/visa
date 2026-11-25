@@ -8,5 +8,5 @@ declare module "bwip-js" {
   }
 
   export function toSVG(options: ToSvgOptions): string;
+  export function toBuffer(options: ToSvgOptions): Promise<Buffer>;
 }
-

@@ -1,16 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: [
-    "playwright-core",
-    "@sparticuz/chromium",
-    "bwip-js",
-  ],
+  serverExternalPackages: ["@napi-rs/canvas", "bwip-js"],
   outputFileTracingIncludes: {
-    "/": [
-      "./node_modules/@sparticuz/chromium/**/*",
-      "./public/assets/**/*",
-    ],
+    "/": ["./public/assets/**/*", "./public/fonts/**/*"],
   },
   experimental: {
     serverActions: {
