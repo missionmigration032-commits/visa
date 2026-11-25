@@ -102,44 +102,21 @@ function roundRectPath(
   ctx.closePath();
 }
 
-function drawChevronStrip(
+function drawTiledChevronPng(
   ctx: SKRSContext2D,
+  img: Awaited<ReturnType<typeof loadImage>>,
   x: number,
   y: number,
   width: number,
   height: number
 ) {
-  const step = 20;
-  const count = Math.floor(width / step);
+  const tileW = (img.width / img.height) * height;
   ctx.save();
-  for (let i = 0; i < count; i++) {
-    const cx = x + i * step;
-    const isStriped = i % 2 === 1;
-
-    ctx.beginPath();
-    ctx.moveTo(cx + 2, y + 2);
-    ctx.lineTo(cx + 6.5, y + 2);
-    ctx.lineTo(cx + 8.5, y + height * 0.55);
-    ctx.lineTo(cx + 12.5, y + 1);
-    ctx.lineTo(cx + 17.5, y + 1);
-    ctx.lineTo(cx + 10.5, y + height - 1);
-    ctx.lineTo(cx + 5.5, y + height - 1);
-    ctx.closePath();
-
-    if (!isStriped) {
-      ctx.fillStyle = "#8b6fa8";
-      ctx.fill();
-    } else {
-      ctx.save();
-      ctx.clip();
-      ctx.fillStyle = "#a894bf";
-      ctx.fillRect(cx, y, step, height);
-      ctx.fillStyle = "#ffffff";
-      for (let sy = y + 3.5; sy < y + height; sy += 3.5) {
-        ctx.fillRect(cx, sy, step, 1.3);
-      }
-      ctx.restore();
-    }
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+  ctx.clip();
+  for (let cx = x; cx < x + width; cx += tileW) {
+    ctx.drawImage(img, cx, y, tileW, height);
   }
   ctx.restore();
 }
@@ -393,15 +370,17 @@ export async function renderVisaPdfBuffer(
     ksaVisaLogo,
     ksaHeaderTitle,
     fingerprintImg,
+    chevronStripImg,
     applicantPhoto,
     barcode1Buf,
     barcode2Buf,
     qrPngBuf,
     qrDataUrl,
   ] = await Promise.all([
-    loadPublicAssetImage("ksa-visa-logo.jpg"),
+    loadPublicAssetImage("ksa-visa-logo.png"),
     loadPublicAssetImage("ksa-header-title.png"),
-    loadPublicAssetImage("fingerprint.jpg"),
+    loadPublicAssetImage("fingerprint.png"),
+    loadPublicAssetImage("chevron-strip.png"),
     loadDataUrlImage(data.photoDataUrl),
     bwipjs.toBuffer({
       bcid: "code128",
@@ -485,7 +464,7 @@ export async function renderVisaPdfBuffer(
   }
 
   // Top Chevron Divider (under summary table)
-  drawChevronStrip(ctx, sumX, curY + 8, sumW, 18);
+  drawTiledChevronPng(ctx, chevronStripImg, sumX, curY + 6, sumW, 22);
 
   // Main 10-row Details Table
   const detailRows = [
@@ -567,8 +546,8 @@ export async function renderVisaPdfBuffer(
   ctx.drawImage(fingerprintImg, padX + 68, fpY, 44, 44);
 
   // Full-width bottom Chevron Divider
-  const chev2Y = fpY + 52;
-  drawChevronStrip(ctx, padX, chev2Y, contentW, 18);
+  const chev2Y = fpY + 50;
+  drawTiledChevronPng(ctx, chevronStripImg, padX, chev2Y, contentW, 22);
 
   // QR Code Section
   const qrSize = 72;
