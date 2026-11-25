@@ -400,7 +400,7 @@ export async function renderVisaPdfBuffer(
     qrDataUrl,
   ] = await Promise.all([
     loadPublicAssetImage("ksa-visa-logo.jpg"),
-    loadPublicAssetImage("ksa-header-title.jpg"),
+    loadPublicAssetImage("ksa-header-title.png"),
     loadPublicAssetImage("fingerprint.jpg"),
     loadDataUrlImage(data.photoDataUrl),
     bwipjs.toBuffer({
