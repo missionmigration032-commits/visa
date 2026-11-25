@@ -17,6 +17,12 @@ export interface VisaGenerationResult {
   qrDataUrl?: string;
   mrz?: [string, string];
   visaNo?: string;
+  barcode2No?: string;
+}
+
+function generateUniqueBarcode2Serial(): string {
+  const randomDigits = Math.floor(100000000 + Math.random() * 900000000);
+  return `E${randomDigits}`;
 }
 
 export async function generateAndStoreVisaAction(
@@ -84,7 +90,10 @@ export async function generateAndStoreVisaAction(
       };
     }
 
-    const data: VisaFormData = parsed.data;
+    const data: VisaFormData = {
+      ...parsed.data,
+      barcode2No: generateUniqueBarcode2Serial(),
+    };
     const mrz = generateMrzLines(data);
     const timestamp = Date.now();
     const safeVisaNo = data.visaNo.replace(/[^a-zA-Z0-9_-]/g, "");
@@ -121,6 +130,7 @@ export async function generateAndStoreVisaAction(
       qrDataUrl,
       mrz,
       visaNo: data.visaNo,
+      barcode2No: data.barcode2No,
     };
   } catch (err) {
     console.error("Visa generation failed:", err);

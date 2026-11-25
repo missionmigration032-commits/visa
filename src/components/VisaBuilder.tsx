@@ -117,6 +117,9 @@ export default function VisaBuilder({ cloudinaryReady }: VisaBuilderProps) {
 
     startTransition(async () => {
       const res = await generateAndStoreVisaAction(fd);
+      if (res.success && res.barcode2No) {
+        setForm((prev) => ({ ...prev, barcode2No: res.barcode2No! }));
+      }
       setResult(res);
     });
   }
