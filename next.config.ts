@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["playwright", "bwip-js"],
+  serverExternalPackages: [
+    "playwright-core",
+    "playwright",
+    "@sparticuz/chromium",
+    "bwip-js",
+  ],
+  outputFileTracingIncludes: {
+    "/**": [
+      "./node_modules/@sparticuz/chromium/**/*",
+      "./public/assets/**/*",
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",

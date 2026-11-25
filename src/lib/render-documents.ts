@@ -2,7 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import bwipjs from "bwip-js";
 import QRCode from "qrcode";
-import { chromium } from "playwright";
+import { chromium as playwrightChromium, type Browser } from "playwright-core";
+import sparticuzChromium from "@sparticuz/chromium";
 import type { VisaFormData } from "./visa-schema";
 import { renderVerificationCardHtml, renderVisaPdfHtml } from "./visa-templates";
 
@@ -25,13 +26,40 @@ async function loadPublicAssetDataUrl(
   return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
 
+async function launchBrowser(): Promise<Browser> {
+  const isServerless = Boolean(
+    process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+  );
+
+  if (isServerless) {
+    const executablePath = await sparticuzChromium.executablePath();
+    return playwrightChromium.launch({
+      args: sparticuzChromium.args,
+      executablePath,
+      headless: true,
+    });
+  }
+
+  try {
+    const { chromium } = await import("playwright");
+    return await chromium.launch({ headless: true });
+  } catch {
+    const executablePath = await sparticuzChromium.executablePath();
+    return playwrightChromium.launch({
+      args: sparticuzChromium.args,
+      executablePath,
+      headless: true,
+    });
+  }
+}
+
 export async function renderVerificationCardPng(
   data: VisaFormData,
   mrz: [string, string]
 ): Promise<Buffer> {
   const mofaLogoDataUrl = await loadPublicAssetDataUrl("mofa-logo.png", "image/png");
   const html = renderVerificationCardHtml(data, mrz, mofaLogoDataUrl);
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchBrowser();
 
   try {
     const page = await browser.newPage({
@@ -86,7 +114,7 @@ export async function renderVisaPdfBuffer(
     fingerprintDataUrl,
   });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchBrowser();
 
   try {
     const page = await browser.newPage();
